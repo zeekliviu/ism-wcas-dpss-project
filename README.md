@@ -1,5 +1,7 @@
 # Sistem Distribuit de Criptare/Decriptare BMP cu Monitorizare SNMP
 
+![Project Diagram](project_diagram.png)
+
 ## Descriere Generală
 
 Acest proiect implementează un sistem distribuit complet pentru criptarea și decriptarea fișierelor BMP folosind algoritmul **AES** cu suport pentru chei de **128, 192 și 256 de biți** în modurile **ECB** și **CBC**. Sistemul este construit pe o arhitectură de **5 containere Docker** interconectate prin **RabbitMQ** și **RESTful APIs** incluzând monitorizare SNMP în timp real.
