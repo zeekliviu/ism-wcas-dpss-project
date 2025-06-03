@@ -1,0 +1,100 @@
+services:
+  c01:
+    build:
+      context: .
+      dockerfile: ./c01/Dockerfile
+    ports:
+      - "8080:7000"
+    depends_on:
+      c02:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes: []
+    environment:
+      - JAVALIN_PORT=7000
+      - RABBITMQ_HOST=c02
+      - RABBITMQ_PORT=5672
+  c02:
+    build:
+      context: .
+      dockerfile: ./c02/Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+      - C05_API_URL=http://c05:3000
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+  c03:
+    build:
+      context: .
+      dockerfile: ./c03/Dockerfile
+    depends_on:
+      c02:
+        condition: service_healthy
+      c05:
+        condition: service_healthy
+      c04:
+        condition: service_started
+    networks:
+      - app-network
+    environment:
+      - RABBITMQ_HOST=c02
+      - RABBITMQ_PORT=5672
+      - C05_API_URL=http://c05:3000
+
+  c04:
+    build:
+      context: .
+      dockerfile: ./c04/Dockerfile
+    networks:
+      - app-network
+
+  c05:
+    build:
+      context: .
+      dockerfile: ./c05/Dockerfile
+    ports:
+      - "3000:3000"
+      - "3306:3306"
+      - "27017:27017"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mongodb_data:/data/db
+      - ./c05/mysql_custom.cnf:/etc/mysql/conf.d/custom.cnf
+      - mysql_shared_data:/opt/app/mysql_shared_uploads
+    networks:
+      - app-network
+    environment:
+      - MYSQL_HOST=localhost
+      - MYSQL_USER=nodeapp
+      - MYSQL_PASS=nodepass
+      - MYSQL_DATABASE=picturesdb
+      - MYSQL_ROOT_PASSWORD=rootpass
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  mysql_data:
+  mongodb_data:
+  mysql_shared_data:
